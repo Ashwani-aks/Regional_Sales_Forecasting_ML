@@ -31,12 +31,14 @@ Regional_Sales_Forecasting/
 ## ⚙️ Installation
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/Ashwani-aks/Regional_Sales_Forecasting_ML.git
 cd Regional_Sales_Forecasting_ML
 ```
 
 2. Create and activate a virtual environment
+
 ```bash
 python -m venv venv
 venv\Scripts\activate      # Windows
@@ -44,6 +46,7 @@ source venv/bin/activate   # macOS/Linux
 ```
 
 3. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -72,7 +75,6 @@ Update paths and parameters in the config file (or top of the script) as needed 
 - Pandas, NumPy
 - Scikit-learn
 - Matplotlib / Seaborn
-- Jupyter Notebook
 
 ## 🤝 Contributing
 
