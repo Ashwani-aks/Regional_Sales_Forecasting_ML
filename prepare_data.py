@@ -1,12 +1,12 @@
 import pandas as pd
 
 df = pd.read_csv("data/sales_data.csv")
-df["Date"] = pd.to_datetime(df["Date"])
+df["Date"] = pd.to_datetime(df["Date"]) # text to numeric date
 
-# Combine stores by date, product and region
+# puts records with the same date, product, and region together
 daily = (
     df.groupby(["Date", "Product ID", "Region"])
-    .agg(
+    .agg(                 # create 1 new row per category given
         Price=("Price", "mean"),
         Discount=("Discount", "mean"),
         Promotion=("Holiday/Promotion", "max"),
@@ -14,26 +14,26 @@ daily = (
     )
 )
 
-# Create every possible Date + Product + Region combination
 all_dates = pd.date_range(df["Date"].min(), df["Date"].max(), freq="D")
 all_products = sorted(df["Product ID"].unique())
 all_regions = sorted(df["Region"].unique())
 
-complete_index = pd.MultiIndex.from_product(
+complete_index = pd.MultiIndex.from_product( # Create every possible Date + Product + Region combination
     [all_dates, all_products, all_regions],
     names=["Date", "Product ID", "Region"]
 )
 
-daily = daily.reindex(complete_index).reset_index()
+daily = daily.reindex(complete_index).reset_index()    # if a combination missing it will make it new row 
 
-# Missing sales mean zero recorded sales for that combination
+#missing sales --> 0
 daily["Units_Sold"] = daily["Units_Sold"].fillna(0)
 
-# Fill missing price using the product's median price
+#missing price ----> median price
 daily["Price"] = daily["Price"].fillna(
     daily.groupby("Product ID")["Price"].transform("median")
 )
 
+#missing discount and promotion --> 0
 daily["Discount"] = daily["Discount"].fillna(0)
 daily["Promotion"] = daily["Promotion"].fillna(0)
 
@@ -45,7 +45,7 @@ product_categories = (
 
 daily["Category"] = daily["Product ID"].map(product_categories)
 
-# Create date features
+# month from date
 daily["Month"] = daily["Date"].dt.month
 
 def get_season(month):
@@ -67,7 +67,7 @@ daily = daily.sort_values(
 
 groups = daily.groupby(["Product ID", "Region"])
 
-# Historical sales inputs
+# add previous 7 day sale and previous 30 day sale
 daily["Previous_7_Day_Sales"] = groups["Units_Sold"].transform(
     lambda sales: sales.rolling(7).sum().shift(1)
 )

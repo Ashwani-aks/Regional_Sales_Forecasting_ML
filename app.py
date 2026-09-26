@@ -1,149 +1,138 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import matplotlib.pyplot as plt
 
-st.set_page_config(
-    page_title="Regional Sales Forecasting",
-    page_icon="📈",
-    layout="centered"
-)
+# Load trained models
+model_7 = joblib.load("models/sales_model_7_days.joblib")
+model_30 = joblib.load("models/sales_model_30_days.joblib")
 
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/processed_sales_data.csv")
-    df["Date"] = pd.to_datetime(df["Date"])
-    return df
+st.title("Regional Sales Forecasting")
 
-@st.cache_resource
-def load_models():
-    model_7 = joblib.load("models/sales_model_7_days.joblib")
-    model_30 = joblib.load("models/sales_model_30_days.joblib")
-    return model_7, model_30
+products = [f"P{i:04d}" for i in range(1, 21)]   #create list of product id from 1 to 20
+regions = ["North", "South", "East", "West"]
+categories = ["Groceries", "Toys", "Electronics", "Furniture", "Clothing"]
+seasons = ["Winter", "Summer", "Monsoon", "Autumn"]
 
-df = load_data()
-model_7, model_30 = load_models()
-
-st.title("📈 Regional Product Sales Forecasting")
-st.write(
-    "Predict the next 7-day or 30-day product sales for a selected region."
-)
-
-products = sorted(df["Product ID"].unique())
-regions = sorted(df["Region"].unique())
 
 col1, col2 = st.columns(2)
 
 with col1:
-    selected_product = st.selectbox("Select Product", products)
+    product = st.selectbox("Select Product ID", products)
+    category = st.selectbox("Select Product Category", categories)
+    region = st.selectbox("Select Region", regions)
+
+    price = st.number_input(
+        "Product Price",
+        min_value=0.0,
+        value=100.0
+    )
+
+    discount = st.number_input(
+        "Discount Percentage",
+        min_value=0.0,
+        max_value=100.0,
+        value=0.0
+    )
 
 with col2:
-    selected_region = st.selectbox("Select Region", regions)
+    promotion_text = st.selectbox(
+        "Holiday / Promotion",
+        ["No", "Yes"]
+    )
+
+    season = st.selectbox("Select Season", seasons)
+
+    month = st.number_input(
+        "Month Number",
+        min_value=1,
+        max_value=12,
+        value=1
+    )
+
+    units_sold = st.number_input(
+        "Today's Units Sold",
+        min_value=0.0,
+        value=100.0
+    )
+
+    previous_7_days = st.number_input(
+        "Previous 7-Day Sales",
+        min_value=0.0,
+        value=700.0
+    )
+
+    previous_30_days = st.number_input(
+        "Previous 30-Day Sales",
+        min_value=0.0,
+        value=3000.0
+    )
+
+promotion = 1 if promotion_text == "Yes" else 0
 
 forecast_period = st.radio(
-    "Forecast Period",
+    "Select Forecast Period",
     ["Next 7 Days", "Next 30 Days"],
     horizontal=True
 )
 
-# Get the latest historical record for selected product and region
-filtered_data = df[
-    (df["Product ID"] == selected_product)
-    & (df["Region"] == selected_region)
-].sort_values("Date")
-
-latest_record = filtered_data.iloc[-1]
-
-st.subheader("Sales Conditions")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    price = st.number_input(
-        "Price",
-        min_value=0.0,
-        value=float(latest_record["Price"])
-    )
-
-    discount = st.number_input(
-        "Discount (%)",
-        min_value=0.0,
-        max_value=100.0,
-        value=float(latest_record["Discount"])
-    )
-
-with col2:
-    season = st.selectbox(
-        "Season",
-        ["Winter", "Summer", "Monsoon", "Autumn"],
-        index=["Winter", "Summer", "Monsoon", "Autumn"].index(
-            latest_record["Season"]
-        )
-    )
-
-    promotion = st.selectbox(
-        "Holiday / Promotion",
-        [0, 1],
-        format_func=lambda value: "Yes" if value == 1 else "No",
-        index=int(latest_record["Promotion"])
-    )
-
-if st.button("Predict Sales", type="primary"):
+if st.button("Predict Sales"):
 
     input_data = pd.DataFrame([{
-        "Product ID": selected_product,
-        "Category": latest_record["Category"],
-        "Region": selected_region,
+        "Product ID": product,
+        "Category": category,
+        "Region": region,
         "Price": price,
         "Discount": discount,
         "Promotion": promotion,
         "Season": season,
-        "Month": latest_record["Month"],
-        "Units_Sold": latest_record["Units_Sold"],
-        "Previous_7_Day_Sales": latest_record["Previous_7_Day_Sales"],
-        "Previous_30_Day_Sales": latest_record["Previous_30_Day_Sales"]
+        "Month": month,
+        "Units_Sold": units_sold,
+        "Previous_7_Day_Sales": previous_7_days,
+        "Previous_30_Day_Sales": previous_30_days
     }])
 
     if forecast_period == "Next 7 Days":
-        predicted_sales = model_7.predict(input_data)[0]
-        period_name = "next 7 days"
+        prediction = model_7.predict(input_data)[0]
+        forecast_name = "Next 7 Days"
     else:
-        predicted_sales = model_30.predict(input_data)[0]
-        period_name = "next 30 days"
+        prediction = model_30.predict(input_data)[0]
+        forecast_name = "Next 30 Days"
 
-    predicted_sales = max(0, round(predicted_sales))
-    recommended_stock = round(predicted_sales * 1.10)
+    prediction = max(0, round(prediction))
+    recommended_stock = round(prediction * 1.10)
 
-    if predicted_sales < 1500:
-        demand = "Low"
-    elif predicted_sales < 4000:
-        demand = "Medium"
-    else:
-        demand = "High"
+    st.subheader("Prediction Result")
 
-    st.divider()
-    st.subheader("Forecast Result")
+    result1, result2 = st.columns(2)
 
-    result1, result2, result3 = st.columns(3)
+    with result1:
+        st.write("Product ID:", product)
+        st.write("Region:", region)
+        st.write("Forecast Period:", forecast_name)
 
-    result1.metric("Predicted Sales", f"{predicted_sales} units")
-    result2.metric("Demand Level", demand)
-    result3.metric("Recommended Stock", f"{recommended_stock} units")
+    with result2:
+        st.write("Predicted Sales:", prediction, "units")
+        st.write("Recommended Stock:", recommended_stock, "units")
 
-    st.info(
-        f"For **{selected_product}** in the **{selected_region}** region, "
-        f"estimated sales for the **{period_name}** are **{predicted_sales} units**."
-    )
+    
+    labels = ["Predicted Sales", "Recommended Stock"]
+    values = [prediction, recommended_stock]
 
-    chart_data = pd.DataFrame(
-        {
-            "Type": ["Predicted Sales", "Recommended Stock"],
-            "Units": [predicted_sales, recommended_stock]
-        }
-    ).set_index("Type")
+    fig, ax = plt.subplots()
+    bars = ax.bar(labels, values, color=["blue", "green"])
 
-    st.bar_chart(chart_data)
+    ax.set_title("Sales Forecast Result")
+    ax.set_ylabel("Units")
 
-st.divider()
-st.caption(
-    "This project uses a Random Forest model trained on historical retail sales data."
-)
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            str(round(height)),
+            ha="center",
+            va="bottom"
+        )
+
+    st.pyplot(fig)

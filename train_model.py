@@ -46,7 +46,7 @@ numeric_features = [
 ]
 
 
-# Chronological train-test split
+# get unique dates and split into train and test sets
 unique_dates = sorted(df["Date"].unique())
 split_position = int(len(unique_dates) * 0.80)
 split_date = unique_dates[split_position]
@@ -113,7 +113,7 @@ def train_and_evaluate(target, model_path):
     print(f"R2 Score: {r2:.4f}")
     print(f"Saved: {model_path}")
 
-
+#print number of training and testing rows and the split date
 print("Training records:", len(train_df))
 print("Testing records:", len(test_df))
 print("Split date:", pd.Timestamp(split_date).date())

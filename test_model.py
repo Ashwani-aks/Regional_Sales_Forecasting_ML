@@ -24,7 +24,7 @@ features = [
     "Previous_30_Day_Sales"
 ]
 
-X_sample = sample[features]
+X_sample = sample[features] # from sample keep only the features for prediction
 
 prediction_7 = model_7.predict(X_sample)[0]
 prediction_30 = model_30.predict(X_sample)[0]
