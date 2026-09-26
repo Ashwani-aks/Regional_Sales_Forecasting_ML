@@ -75,6 +75,7 @@ Update paths and parameters in the config file (or top of the script) as needed 
 - Pandas, NumPy
 - Scikit-learn
 - Matplotlib / Seaborn
+- Plotly
 
 ## 🤝 Contributing
 
